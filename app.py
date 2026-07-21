@@ -98,9 +98,9 @@ def list_models(api_key):
     try:
         client = Groq(api_key=api_key)
         models = client.models.list().data
-        # Keep only text/chat models: drop audio (whisper/tts) and safety
-        # guard models, which can't hold a normal conversation.
-        skip = ("whisper", "tts", "guard")
+        # Keep only text/chat models: drop audio (whisper/tts/orpheus) and
+        # safety guard models, which can't hold a normal conversation.
+        skip = ("whisper", "tts", "guard", "orpheus")
         ids = [
             m.id
             for m in models
