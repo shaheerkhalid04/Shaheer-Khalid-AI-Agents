@@ -109,7 +109,22 @@ def list_models(api_key):
             for m in models
             if not any(word in m.id.lower() for word in skip)
         ]
-        ids.sort()
+
+        # Show strong, general-purpose chat models first so the default
+        # selection is a capable one; everything else follows alphabetically.
+        preferred = [
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
+            "llama-3.3-70b-versatile",
+            "qwen/qwen3.6-27b",
+            "llama-3.1-8b-instant",
+        ]
+
+        def rank(model_id):
+            spot = preferred.index(model_id) if model_id in preferred else len(preferred)
+            return (spot, model_id)
+
+        ids.sort(key=rank)
         return ids or FALLBACK_MODELS
     except Exception:
         return FALLBACK_MODELS
