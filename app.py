@@ -10,6 +10,8 @@ Run locally:
     streamlit run app.py
 """
 
+import os
+
 import streamlit as st
 from groq import Groq
 
@@ -71,20 +73,21 @@ FALLBACK_MODELS = [
 
 def get_api_key():
     """
-    Find the Groq API key.
+    Find the Groq API key without asking the user.
 
-    Order of preference:
-      1. Streamlit secrets (set in the Streamlit Cloud dashboard, or in a
-         local .streamlit/secrets.toml file).
-      2. A key the user types into the sidebar.
+    Looks in Streamlit secrets first (set in the Streamlit Cloud dashboard
+    under Settings -> Secrets, or in a local .streamlit/secrets.toml file),
+    then in a GROQ_API_KEY environment variable. Returns "" only if neither
+    is set, in which case the sidebar shows a key box as a fallback.
     """
-    key = ""
     try:
-        key = st.secrets.get("GROQ_API_KEY", "")
+        if "GROQ_API_KEY" in st.secrets:
+            return st.secrets["GROQ_API_KEY"]
     except Exception:
-        # No secrets file at all -> st.secrets raises. That's fine.
-        key = ""
-    return key
+        # st.secrets raises if no secrets are configured at all; ignore it
+        # and fall through to the environment variable.
+        pass
+    return os.environ.get("GROQ_API_KEY", "")
 
 
 @st.cache_data(show_spinner=False)
