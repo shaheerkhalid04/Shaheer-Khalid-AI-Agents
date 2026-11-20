@@ -61,14 +61,14 @@ PERSONALITIES = {
 }
 
 # If we cannot reach Groq to list models, fall back to these known-good ids.
-# gpt-oss models are the safe current picks; the Llama ids are kept as extra
-# options in case they are still enabled on the account.
+# Groq retired llama-3.3-70b-versatile and llama-3.1-8b-instant on
+# 16 Aug 2026, so they are no longer offered.
 FALLBACK_MODELS = [
     "openai/gpt-oss-120b",
     "openai/gpt-oss-20b",
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
 ]
+
+RETIRED_MODELS = {"llama-3.3-70b-versatile", "llama-3.1-8b-instant"}
 
 
 def get_api_key():
@@ -108,6 +108,7 @@ def list_models(api_key):
             m.id
             for m in models
             if not any(word in m.id.lower() for word in skip)
+            and m.id not in RETIRED_MODELS
         ]
 
         # Show strong, general-purpose chat models first so the default
@@ -115,9 +116,7 @@ def list_models(api_key):
         preferred = [
             "openai/gpt-oss-120b",
             "openai/gpt-oss-20b",
-            "llama-3.3-70b-versatile",
             "qwen/qwen3.6-27b",
-            "llama-3.1-8b-instant",
         ]
 
         def rank(model_id):
@@ -212,10 +211,18 @@ if prompt:
     with st.chat_message("assistant"):
         try:
             client = Groq(api_key=api_key)
+            # gpt-oss models reason first; low effort keeps replies quick.
+            # Only the answer text is streamed and kept in the history.
+            reasoning = (
+                {"extra_body": {"reasoning_effort": "low"}}
+                if model.startswith("openai/gpt-oss")
+                else {}
+            )
             stream = client.chat.completions.create(
                 model=model,
                 messages=build_messages(system_prompt, st.session_state.messages),
                 stream=True,
+                **reasoning,
             )
 
             def token_stream():
